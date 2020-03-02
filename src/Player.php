@@ -1,6 +1,6 @@
 <?php
 
-namespace Zelenin\Glicko2;
+namespace Youhey\Glicko2;
 
 final class Player
 {

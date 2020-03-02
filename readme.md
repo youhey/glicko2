@@ -11,13 +11,13 @@ The preferred way to install this extension is through [Composer](http://getcomp
 Either run
 
 ```
-php composer.phar require zelenin/glicko2 "~1.0.0"
+php composer.phar require youhey/glicko2 "~1.0.0"
 ```
 
 or add
 
 ```
-"zelenin/glicko2": "~1.0.0"
+"youhey/glicko2": "~1.0.0"
 ```
 
 to the require section of your ```composer.json```
@@ -27,10 +27,10 @@ to the require section of your ```composer.json```
 Create two players with current ratings:
 
 ```php
-use Zelenin\Glicko2\Glicko2;
-use Zelenin\Glicko2\Match;
-use Zelenin\Glicko2\MatchCollection;
-use Zelenin\Glicko2\Player;
+use Youhey\Glicko2\Glicko2;
+use Youhey\Glicko2\Match;
+use Youhey\Glicko2\MatchCollection;
+use Youhey\Glicko2\Player;
 
 $glicko = new Glicko2();
 
@@ -55,5 +55,7 @@ $newPlayer2R = $player2->getR();
 ```
 
 ## Author
+
+[Ikeda Youhei](https://github.com/youhey/), e-mail: [youhey.ikeda@gmail.com](mailto:youhey.ikeda@gmail.com)
 
 [Aleksandr Zelenin](https://github.com/zelenin/), e-mail: [aleksandr@zelenin.me](mailto:aleksandr@zelenin.me)

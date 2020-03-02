@@ -1,5 +1,5 @@
 {
-    "name": "zelenin/glicko2",
+    "name": "youhey/glicko2",
     "description": "A PHP implementation of Glicko2 rating system",
     "type": "library",
     "keywords": [
@@ -8,9 +8,14 @@
         "rating",
         "ranking"
     ],
-    "homepage": "https://github.com/zelenin/glicko2",
+    "homepage": "https://github.com/youhey/glicko2",
     "license": "MIT",
     "authors": [
+        {
+            "name": "Ikeda Youhei",
+            "email": "youhey.ikeda@gmail.com",
+            "role": "Developer"
+        },
         {
             "name": "Aleksandr Zelenin",
             "email": "aleksandr@zelenin.me",
@@ -18,8 +23,8 @@
         }
     ],
     "support": {
-        "issues": "https://github.com/zelenin/glicko2/issues",
-        "source": "https://github.com/zelenin/glicko2"
+        "issues": "https://github.com/youhey/glicko2/issues",
+        "source": "https://github.com/youhey/glicko2"
     },
     "require": {
         "php": ">=5.4.0"
@@ -29,12 +34,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Zelenin\\Glicko2\\": "src"
+            "Youhey\\Glicko2\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Zelenin\\Glicko2\\Test\\": "tests"
+            "Youhey\\Glicko2\\Test\\": "tests"
         }
     }
 }
