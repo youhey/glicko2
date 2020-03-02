@@ -20,7 +20,7 @@ or add
 "youhey/glicko2": "~1.0.0"
 ```
 
-to the require section of your ```composer.json```
+to the require section of your `composer.json`
 
 ## Usage
 
@@ -29,29 +29,21 @@ Create two players with current ratings:
 ```php
 use Youhey\Glicko2\Glicko2;
 use Youhey\Glicko2\Match;
-use Youhey\Glicko2\MatchCollection;
 use Youhey\Glicko2\Player;
 
 $glicko = new Glicko2();
 
-$player1 = new Player(1700, 250, 0.05);
-$player2 = new Player();
+$player = new Player(1700.0, 250.0, 0.05);
+$opponent = new Player(1650.0, 350.0, 0.06);
 
-$match = new Match($player1, $player2, 1, 0);
+$match = new Match($player, $opponent, 1.0, 0.0);
 $glicko->calculateMatch($match);
 
-$match = new Match($player1, $player2, 3, 2);
+$match = new Match($player, $opponent, 3.0, 2.0);
 $glicko->calculateMatch($match);
 
-// or
-
-$matchCollection = new MatchCollection();
-$matchCollection->addMatch(new Match($player1, $player2, 1, 0));
-$matchCollection->addMatch(new Match($player1, $player2, 3, 2));
-$glicko->calculateMatches($matchCollection);
-
-$newPlayer1R = $player1->getR();
-$newPlayer2R = $player2->getR();
+$newPlayerRating = $player->getRating();
+$newOpponentRating = $opponent->getRating();
 ```
 
 ## Author

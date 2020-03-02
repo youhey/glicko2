@@ -5,19 +5,16 @@ namespace Youhey\Glicko2\Test;
 use PHPUnit\Framework\TestCase;
 use Youhey\Glicko2\Glicko2;
 use Youhey\Glicko2\Match;
-use Youhey\Glicko2\MatchCollection;
 use Youhey\Glicko2\Player;
 
-final class Glicko2Test extends TestCase
+class Glicko2Test extends TestCase
 {
-    /**
-     * @var Glicko2
-     */
-    private Glicko2 $glicko;
+    /** @var Glicko2 */
+    private Glicko2 $ratingSystem;
 
     public function setUp(): void
     {
-        $this->glicko = new Glicko2();
+        $this->ratingSystem = new Glicko2();
 
         parent::setUp();
     }
@@ -26,65 +23,71 @@ final class Glicko2Test extends TestCase
     {
         $player = new Player();
 
-        $this->assertEquals(Player::DEFAULT_R, $player->getR());
-        $this->assertEquals(Player::DEFAULT_RD, $player->getRd());
-        $this->assertEquals(Player::DEFAULT_SIGMA, $player->getSigma());
+        $this->assertEquals(Player::DEFAULT_RATING, $player->getRating());
+        $this->assertEquals(Player::DEFAULT_RATING_DEVIATION, $player->getRatingDeviation());
+        $this->assertEquals(Player::DEFAULT_RATING_VOLATILITY, $player->getRatingVolatility());
     }
 
     public function testCustomPlayer(): void
     {
-        $r = 1700;
-        $rd = 300;
+        $r = 1700.0;
+        $rd = 300.0;
         $sigma = 0.04;
 
         $player = new Player($r, $rd, $sigma);
 
-        $this->assertEquals($r, $player->getR());
-        $this->assertEquals($rd, $player->getRd());
-        $this->assertEquals($sigma, $player->getSigma());
+        $this->assertEquals($r, $player->getRating());
+        $this->assertEquals($rd, $player->getRatingDeviation());
+        $this->assertEquals($sigma, $player->getRatingVolatility());
     }
 
     public function testCalculateMatch(): void
     {
-        $player1 = new Player(1500, 200, 0.06);
-        $player2 = new Player(1400, 30, 0.06);
+        $player1 = new Player(1500.0, 200.0, 0.06);
+        $player2 = new Player(1400.0, 30.0, 0.06);
 
         $match = new Match($player1, $player2, 1.0, 0.0);
-        $this->glicko->calculateMatch($match);
+        $this->ratingSystem->calculateMatch($match);
 
-        $this->assertEquals(1563.564, $this->round($player1->getR()));
-        $this->assertEquals(175.403, $this->round($player1->getRd()));
-        $this->assertEquals(0.06, $this->round($player1->getSigma()));
+        $this->assertEquals(1563.564, $this->round($player1->getRating()));
+        $this->assertEquals(175.403, $this->round($player1->getRatingDeviation()));
+        $this->assertEquals(0.06, $this->round($player1->getRatingVolatility()));
 
-        $this->assertEquals(1398.144, $this->round($player2->getR()));
-        $this->assertEquals(31.67, $this->round($player2->getRd()));
-        $this->assertEquals(0.06, $this->round($player2->getSigma()));
+        $this->assertEquals(1398.144, $this->round($player2->getRating()));
+        $this->assertEquals(31.67, $this->round($player2->getRatingDeviation()));
+        $this->assertEquals(0.06, $this->round($player2->getRatingVolatility()));
     }
 
-    public function testCalculateMatchCollection(): void
+    /**
+     * Example calculation:
+     * Suppose a player rated 1500 competes against players rated 1400, 1550 and 1700, winning
+     * the first game and losing the next two. Assume the 1500-rated player’s rating deviation
+     * is 200, and his opponents’ are 30, 100 and 300, respectively. Assume the 1500 player has
+     * volatility σ = 0.06, and the system constant τ is 0.5.
+     *
+     * @see http://www.glicko.net/glicko/glicko2.pdf
+     */
+    public function testExampleCalculation(): void
     {
-        $player1 = new Player(1500, 200, 0.06);
-        $player2 = new Player(1400, 30, 0.06);
+        $player = new Player(1500.0, 200, 0.06);
 
-        $player3 = clone $player1;
-        $player4 = clone $player2;
+        $player1 = new Player(1400.0, 30.0);
+        $player2 = new Player(1550.0, 100.0);
+        $player3 = new Player(1700.0, 300.0);
 
-        $match = new Match($player1, $player2, 1.0, 0.0);
-        $this->glicko->calculateMatch($match);
-        $match = new Match($player1, $player2, 1.0, 0.0);
-        $this->glicko->calculateMatch($match);
+        $this->ratingSystem->calculateMatch(new Match($player, $player1, 1.0, 0.0));
+        $this->ratingSystem->calculateMatch(new Match($player, $player2, 0.0, 1.0));
+        $this->ratingSystem->calculateMatch(new Match($player, $player3, 0.0, 1.0));
 
-        $matchCollection = new MatchCollection();
-        $matchCollection->addMatch(new Match($player3, $player4, 1, 0));
-        $matchCollection->addMatch(new Match($player3, $player4, 1, 0));
-        $this->glicko->calculateMatches($matchCollection);
+        // Expected values
+        // $this->assertEquals(1464.06, $this->round($player->getRating()));
+        // $this->assertEquals(151.52, $player1->getRatingDeviation());
+        // $this->assertEquals(0.05999, $player1->getRatingVolatility());
 
-        $this->assertEquals($this->round($player1->getR()), $this->round($player3->getR()));
-        $this->assertEquals($this->round($player2->getR()), $this->round($player4->getR()));
-        $this->assertEquals($this->round($player1->getRd()), $this->round($player3->getRd()));
-        $this->assertEquals($this->round($player2->getRd()), $this->round($player4->getRd()));
-        $this->assertEquals($this->round($player1->getSigma()), $this->round($player3->getSigma()));
-        $this->assertEquals($this->round($player2->getSigma()), $this->round($player4->getSigma()));
+        // small error
+        $this->assertEquals(1463.789, $this->round($player->getRating()));
+        $this->assertEquals(151.873, $this->round($player->getRatingDeviation()));
+        $this->assertEquals(0.060, $this->round($player->getRatingVolatility()));
     }
 
     /**

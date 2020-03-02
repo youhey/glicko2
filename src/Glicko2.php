@@ -4,17 +4,28 @@ declare(strict_types=1);
 
 namespace Youhey\Glicko2;
 
-final class Glicko2
+/**
+ * Glicko-2 rating system
+ */
+class Glicko2
 {
-    /**
-     * system constant τ
-     *
-     * @var float
-     */
+    /** ε */
+    private const CONVERGENCE_TOLERANCE = 0.000001;
+
+    /** pow M_PI, 2 */
+    private const PI_2 = 9.8696044;
+
+    /** @var float The tau parameter τ */
     private float $tau;
 
     /**
-     * @param float $tau
+     * constructor.
+     *
+     * @param float $tau The tau parameter,
+     *     which controls the change in the player volatility across time.
+     *     Smaller values prevent the volatility measures from changing by large amounts.
+     *     Must be a single number. Mark Glickman suggests a value between 0.3 and 1.2.
+     *     A non-pos
      */
     public function __construct(float $tau = 0.5)
     {
@@ -22,33 +33,27 @@ final class Glicko2
     }
 
     /**
-     * @param MatchCollection $matchCollection
-     */
-    public function calculateMatches(MatchCollection $matchCollection): void
-    {
-        foreach ($matchCollection->getMatches() as $match) {
-            $this->calculateMatch($match);
-        }
-    }
-
-    /**
-     * @param Match $match
+     * Calculate a new rating from the match result
+     *
+     * @param Match $match The match result
      */
     public function calculateMatch(Match $match): void
     {
-        $player1 = clone $match->getPlayer1();
-        $player2 = clone $match->getPlayer2();
+        $player1 = $match->getPlayer();
+        $player2 = $match->getOpponent();
 
-        $score = $match->getScore();
+        $result = $match->getResult();
 
-        $calculationResult1 = $this->calculatePlayer($player1, $player2, $score);
-        $calculationResult2 = $this->calculatePlayer($player2, $player1, (1.0 - $score));
+        $calculationResult1 = $this->calculatePlayer($player1, $player2, $result);
+        $calculationResult2 = $this->calculatePlayer($player2, $player1, (1.0 - $result));
 
-        $match->getPlayer1()->loadFromCalculationResult($calculationResult1);
-        $match->getPlayer2()->loadFromCalculationResult($calculationResult2);
+        $player1->updateRating($calculationResult1);
+        $player2->updateRating($calculationResult2);
     }
 
     /**
+     * Calculate new player rating
+     *
      * @param Player $player1
      * @param Player $player2
      * @param float $score
@@ -57,15 +62,17 @@ final class Glicko2
      */
     private function calculatePlayer(Player $player1, Player $player2, float $score): CalculationResult
     {
-        $phi = $player1->getPhi();
-        $mu = $player1->getMu();
-        $sigma = $player1->getSigma();
+        $phi = $player1->getRatingDeviationPhi();
+        $mu = $player1->getRatingMu();
+        $sigma = $player1->getRatingVolatility();
 
-        $phiJ = $player2->getPhi();
-        $muJ = $player2->getMu();
+        $phiJ = $player2->getRatingDeviationPhi();
+        $muJ = $player2->getRatingMu();
 
         $v = $this->v($phiJ, $mu, $muJ);
+
         $delta = $this->delta($phiJ, $mu, $muJ, $score);
+
         $sigmaP = $this->sigmaP($delta, $sigma, $phi, $phiJ, $mu, $muJ);
         $phiS = $this->phiS($phi, $sigmaP);
         $phiP = $this->phiP($phiS, $v);
@@ -75,96 +82,114 @@ final class Glicko2
     }
 
     /**
-     * @param float $phiJ
-     * @param float $mu
-     * @param float $muJ
+     * Step 3 Estimated variance
+     *
+     * @param float $phiJ opponent rating deviation
+     * @param float $mu player rating
+     * @param float $muJ opponent rating
      *
      * @return float
      */
     private function v(float $phiJ, float $mu, float $muJ): float
     {
         $g = $this->g($phiJ);
-        $E = $this->E($mu, $muJ, $phiJ);
-        return 1 / ($g * $g * $E * (1 - $E));
+        $e = $this->e($mu, $muJ, $phiJ);
+
+        return (1.0 / (($g ** 2) * $e * (1.0 - $e)));
     }
 
     /**
-     * @param float $phiJ
+     * g(ϕj)
+     *
+     * @param float $phi rating deviation
      *
      * @return float
      */
-    private function g($phiJ): float
+    private function g(float $phi): float
     {
-        return 1 / sqrt(1 + 3 * pow($phiJ, 2) / pow(M_PI, 2));
+        return (1.0 / sqrt((1.0 + (3.0 * ($phi ** 2)) / self::PI_2)));
     }
 
     /**
-     * @param float $mu
-     * @param float $muJ
-     * @param float $phiJ
+     * E(μ,μj,ϕj)
+     *
+     * @param float $mu player rating
+     * @param float $muJ opponent rating
+     * @param float $phiJ opponent rating deviation
      *
      * @return float
      */
-    private function E($mu, $muJ, $phiJ): float
+    private function e($mu, $muJ, $phiJ): float
     {
-        return 1 / (1 + exp(-$this->g($phiJ) * ($mu - $muJ)));
+        return (1.0 / (1.0 + exp((-1 * $this->g($phiJ) * ($mu - $muJ)))));
     }
 
     /**
-     * @param float $phiJ
-     * @param float $mu
-     * @param float $muJ
-     * @param float $score
+     * Step 4 Estimated improvement in rating
+     *
+     * Δ
+     *
+     * @param float $phiJ opponent rating deviation
+     * @param float $mu player rating
+     * @param float $muJ opponent rating
+     * @param float $score player score
      *
      * @return float
      */
     private function delta(float $phiJ, float $mu, float $muJ, float $score): float
     {
-        return $this->v($phiJ, $mu, $muJ) * $this->g($phiJ) * ($score - $this->E($mu, $muJ, $phiJ));
+        return ($this->v($phiJ, $mu, $muJ) * $this->g($phiJ) * ($score - $this->e($mu, $muJ, $phiJ)));
     }
 
     /**
-     * @param float $delta
-     * @param float $sigma
-     * @param float $phi
-     * @param float $phiJ
-     * @param float $mu
-     * @param float $muJ
+     * Step 5 New sigma
+
+     * @param float $delta Δ
+     * @param float $sigma player sigma
+     * @param float $phi player rating deviation
+     * @param float $phiJ opponent rating deviation
+     * @param float $mu player rating
+     * @param float $muJ opponent rating
      *
      * @return float
      */
     private function sigmaP(float $delta, float $sigma, float $phi, float $phiJ, float $mu, float $muJ): float
     {
-        $A = $a = log(pow($sigma, 2));
         $fX = function ($x, $delta, $phi, $v, $a, $tau) {
-            return ((exp($x) * (pow($delta, 2) - pow($phi, 2) - $v - exp($x))) / (2 * pow((pow($phi, 2) + $v + exp($x)), 2))) - (($x - $a) / pow($tau, 2));
+            return (
+                (exp($x) * (($delta ** 2) - ($phi ** 2) - $v - exp($x)) / (2 * (($phi ** 2) + $v + exp($x) ** 2)))
+                - (($x - $a) / ($tau ** 2))
+            );
         };
-        $epsilon = 0.000001;
-        $v = $this->v($phiJ, $mu, $muJ);
-        $tau = $this->tau;
 
-        if (pow($delta, 2) > (pow($phi, 2) + $v)) {
-            $B = log(pow($delta, 2) - pow($phi, 2) - $v);
+        $a = log(($sigma ** 2));
+        $v = $this->v($phiJ, $mu, $muJ);
+
+        $A = $a;
+        if (($delta ** 2) > (($phi ** 2) + $v)) {
+            $B = log((($delta ** 2) - ($phi ** 2) - $v));
         } else {
             $k = 1;
-            while ($fX($a - $k * $tau, $delta, $phi, $v, $a, $tau) < 0) {
+            while ($fX(($a - ($k * abs($this->tau))), $delta, $phi, $v, $a, $this->tau) < 0.0) {
                 $k++;
             }
-            $B = $a - $k * $tau;
+            $B = ($a - ($k * abs($this->tau)));
         }
 
-        $fA = $fX($A, $delta, $phi, $v, $a, $tau);
-        $fB = $fX($B, $delta, $phi, $v, $a, $tau);
+        $fA = $fX($A, $delta, $phi, $v, $a, $this->tau);
+        $fB = $fX($B, $delta, $phi, $v, $a, $this->tau);
 
-        while (abs($B - $A) > $epsilon) {
-            $C = $A + $fA * ($A - $B) / ($fB - $fA);
-            $fC = $fX($C, $delta, $phi, $v, $a, $tau);
-            if (($fC * $fB) < 0) {
+        while (abs($B - $A) > self::CONVERGENCE_TOLERANCE) {
+            $C = ($A + $fA * ($A - $B) / ($fB - $fA));
+            $fC = $fX($C, $delta, $phi, $v, $a, $this->tau);
+
+            if (($fC * $fB) < 0.0) {
                 $A = $B;
                 $fA = $fB;
             } else {
-                $fA = $fA / 2;
+                $fA = ($fA / 2.0);
             }
+
             $B = $C;
             $fB = $fC;
         }
@@ -173,28 +198,34 @@ final class Glicko2
     }
 
     /**
+     * Step 6 New rating deviation.
+     *
      * @param float $phi
-     * @param float $sigmaP
+     * @param float $sigma
      *
      * @return float
      */
-    private function phiS(float $phi, float $sigmaP): float
+    private function phiS(float $phi, float $sigma): float
     {
-        return sqrt(pow($phi, 2) + pow($sigmaP, 2));
+        return sqrt((($phi ** 2) + ($sigma ** 2)));
     }
 
     /**
-     * @param float $phiS
+     * Step 7 New phi
+     *
+     * @param float $phi
      * @param float $v
      *
      * @return float
      */
-    private function phiP($phiS, $v)
+    private function phiP($phi, $v)
     {
-        return 1 / sqrt(1 / pow($phiS, 2) + 1 / $v);
+        return (1.0 / sqrt(((1.0 / ($phi ** 2) ) + (1.0 / $v))));
     }
 
     /**
+     * New mu
+     *
      * @param float $mu
      * @param float $muJ
      * @param float $phiP
@@ -205,6 +236,6 @@ final class Glicko2
      */
     private function muP(float $mu, float $muJ, float $phiP, float $phiJ, float $score): float
     {
-        return $mu + pow($phiP, 2) * $this->g($phiJ) * ($score - $this->E($mu, $muJ, $phiJ));
+        return ($mu + ($phiP ** 2) * $this->g($phiJ) * ($score - $this->e($mu, $muJ, $phiJ)));
     }
 }

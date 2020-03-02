@@ -4,24 +4,23 @@ declare(strict_types=1);
 
 namespace Youhey\Glicko2;
 
-final class CalculationResult
+/**
+ * Calculation result
+ */
+class CalculationResult
 {
-    /**
-     * @var float
-     */
+    /** @var float A rating μ */
     private float $mu;
 
-    /**
-     * @var float
-     */
+    /** @var float A rating deviation φ */
     private float $phi;
 
-    /**
-     * @var float
-     */
+    /** @var float A rating volatility σ */
     private float $sigma;
 
     /**
+     * constructor.
+     *
      * @param float $mu
      * @param float $phi
      * @param float $sigma
@@ -34,25 +33,31 @@ final class CalculationResult
     }
 
     /**
+     * Get a rating μ
+     *
      * @return float
      */
-    public function getMu(): float
+    public function getRatingMu(): float
     {
         return $this->mu;
     }
 
     /**
+     * Get a rating deviation φ
+     *
      * @return float
      */
-    public function getPhi(): float
+    public function getRatingDeviationPhi(): float
     {
         return $this->phi;
     }
 
     /**
+     * Get a rating deviation φ
+     *
      * @return float
      */
-    public function getSigma(): float
+    public function getRatingVolatility(): float
     {
         return $this->sigma;
     }
