@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Youhey\Glicko2;
 
 final class Glicko2
@@ -9,12 +11,12 @@ final class Glicko2
      *
      * @var float
      */
-    private $tau;
+    private float $tau;
 
     /**
      * @param float $tau
      */
-    public function __construct($tau = 0.5)
+    public function __construct(float $tau = 0.5)
     {
         $this->tau = $tau;
     }
@@ -22,7 +24,7 @@ final class Glicko2
     /**
      * @param MatchCollection $matchCollection
      */
-    public function calculateMatches(MatchCollection $matchCollection)
+    public function calculateMatches(MatchCollection $matchCollection): void
     {
         foreach ($matchCollection->getMatches() as $match) {
             $this->calculateMatch($match);
@@ -32,7 +34,7 @@ final class Glicko2
     /**
      * @param Match $match
      */
-    public function calculateMatch(Match $match)
+    public function calculateMatch(Match $match): void
     {
         $player1 = clone $match->getPlayer1();
         $player2 = clone $match->getPlayer2();
@@ -40,7 +42,7 @@ final class Glicko2
         $score = $match->getScore();
 
         $calculationResult1 = $this->calculatePlayer($player1, $player2, $score);
-        $calculationResult2 = $this->calculatePlayer($player2, $player1, (1 - $score));
+        $calculationResult2 = $this->calculatePlayer($player2, $player1, (1.0 - $score));
 
         $match->getPlayer1()->loadFromCalculationResult($calculationResult1);
         $match->getPlayer2()->loadFromCalculationResult($calculationResult2);
@@ -49,11 +51,11 @@ final class Glicko2
     /**
      * @param Player $player1
      * @param Player $player2
-     * @param int $score
+     * @param float $score
      *
      * @return CalculationResult
      */
-    private function calculatePlayer(Player $player1, Player $player2, $score)
+    private function calculatePlayer(Player $player1, Player $player2, float $score): CalculationResult
     {
         $phi = $player1->getPhi();
         $mu = $player1->getMu();
@@ -79,7 +81,7 @@ final class Glicko2
      *
      * @return float
      */
-    private function v($phiJ, $mu, $muJ)
+    private function v(float $phiJ, float $mu, float $muJ): float
     {
         $g = $this->g($phiJ);
         $E = $this->E($mu, $muJ, $phiJ);
@@ -91,7 +93,7 @@ final class Glicko2
      *
      * @return float
      */
-    private function g($phiJ)
+    private function g($phiJ): float
     {
         return 1 / sqrt(1 + 3 * pow($phiJ, 2) / pow(M_PI, 2));
     }
@@ -103,7 +105,7 @@ final class Glicko2
      *
      * @return float
      */
-    private function E($mu, $muJ, $phiJ)
+    private function E($mu, $muJ, $phiJ): float
     {
         return 1 / (1 + exp(-$this->g($phiJ) * ($mu - $muJ)));
     }
@@ -116,7 +118,7 @@ final class Glicko2
      *
      * @return float
      */
-    private function delta($phiJ, $mu, $muJ, $score)
+    private function delta(float $phiJ, float $mu, float $muJ, float $score): float
     {
         return $this->v($phiJ, $mu, $muJ) * $this->g($phiJ) * ($score - $this->E($mu, $muJ, $phiJ));
     }
@@ -131,7 +133,7 @@ final class Glicko2
      *
      * @return float
      */
-    private function sigmaP($delta, $sigma, $phi, $phiJ, $mu, $muJ)
+    private function sigmaP(float $delta, float $sigma, float $phi, float $phiJ, float $mu, float $muJ): float
     {
         $A = $a = log(pow($sigma, 2));
         $fX = function ($x, $delta, $phi, $v, $a, $tau) {
@@ -176,7 +178,7 @@ final class Glicko2
      *
      * @return float
      */
-    private function phiS($phi, $sigmaP)
+    private function phiS(float $phi, float $sigmaP): float
     {
         return sqrt(pow($phi, 2) + pow($sigmaP, 2));
     }
@@ -197,11 +199,11 @@ final class Glicko2
      * @param float $muJ
      * @param float $phiP
      * @param float $phiJ
-     * @param int $score
+     * @param float $score
      *
      * @return float
      */
-    private function muP($mu, $muJ, $phiP, $phiJ, $score)
+    private function muP(float $mu, float $muJ, float $phiP, float $phiJ, float $score): float
     {
         return $mu + pow($phiP, 2) * $this->g($phiJ) * ($score - $this->E($mu, $muJ, $phiJ));
     }

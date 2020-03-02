@@ -2,22 +2,23 @@
 
 namespace Youhey\Glicko2\Test;
 
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 use Youhey\Glicko2\Glicko2;
 use Youhey\Glicko2\Match;
 use Youhey\Glicko2\MatchCollection;
 use Youhey\Glicko2\Player;
 
-final class Glicko2Test extends PHPUnit_Framework_TestCase
+final class Glicko2Test extends TestCase
 {
     /**
      * @var Glicko2
      */
-    private $glicko;
+    private Glicko2 $glicko;
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->glicko = new Glicko2();
+
         parent::setUp();
     }
 
@@ -30,7 +31,7 @@ final class Glicko2Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(Player::DEFAULT_SIGMA, $player->getSigma());
     }
 
-    public function testCustomPlayer()
+    public function testCustomPlayer(): void
     {
         $r = 1700;
         $rd = 300;
@@ -43,12 +44,12 @@ final class Glicko2Test extends PHPUnit_Framework_TestCase
         $this->assertEquals($sigma, $player->getSigma());
     }
 
-    public function testCalculateMatch()
+    public function testCalculateMatch(): void
     {
         $player1 = new Player(1500, 200, 0.06);
         $player2 = new Player(1400, 30, 0.06);
 
-        $match = new Match($player1, $player2, 1, 0);
+        $match = new Match($player1, $player2, 1.0, 0.0);
         $this->glicko->calculateMatch($match);
 
         $this->assertEquals(1563.564, $this->round($player1->getR()));
@@ -60,7 +61,7 @@ final class Glicko2Test extends PHPUnit_Framework_TestCase
         $this->assertEquals(0.06, $this->round($player2->getSigma()));
     }
 
-    public function testCalculateMatchCollection()
+    public function testCalculateMatchCollection(): void
     {
         $player1 = new Player(1500, 200, 0.06);
         $player2 = new Player(1400, 30, 0.06);
@@ -68,9 +69,9 @@ final class Glicko2Test extends PHPUnit_Framework_TestCase
         $player3 = clone $player1;
         $player4 = clone $player2;
 
-        $match = new Match($player1, $player2, 1, 0);
+        $match = new Match($player1, $player2, 1.0, 0.0);
         $this->glicko->calculateMatch($match);
-        $match = new Match($player1, $player2, 1, 0);
+        $match = new Match($player1, $player2, 1.0, 0.0);
         $this->glicko->calculateMatch($match);
 
         $matchCollection = new MatchCollection();
@@ -93,7 +94,7 @@ final class Glicko2Test extends PHPUnit_Framework_TestCase
      *
      * @return float
      */
-    private function round($value)
+    private function round(float $value): float
     {
         return round($value, 3);
     }

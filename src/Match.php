@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Youhey\Glicko2;
 
 final class Match
@@ -7,26 +9,26 @@ final class Match
     /**
      * @var Player
      */
-    private $player1;
+    private Player $player1;
 
     /**
      * @var Player
      */
-    private $player2;
+    private Player $player2;
 
     /**
      * @var float
      */
-    private $score1;
+    private float $score1;
 
     /**
      * @var float
      */
-    private $score2;
+    private float $score2;
 
-    const RESULT_WIN = 1;
-    const RESULT_DRAW = 0.5;
-    const RESULT_LOSS = 0;
+    private const RESULT_WIN = 1.0;
+    private const RESULT_DRAW = 0.5;
+    private const RESULT_LOSS = 0.0;
 
     /**
      * @param Player $player1
@@ -34,18 +36,18 @@ final class Match
      * @param float $score1
      * @param float $score2
      */
-    public function __construct(Player $player1, Player $player2, $score1, $score2)
+    public function __construct(Player $player1, Player $player2, float $score1, float $score2)
     {
         $this->player1 = $player1;
         $this->player2 = $player2;
-        $this->score1 = (float)$score1;
-        $this->score2 = (float)$score2;
+        $this->score1 = $score1;
+        $this->score2 = $score2;
     }
 
     /**
      * @return float
      */
-    public function getScore()
+    public function getScore(): float
     {
         $diff = $this->score1 - $this->score2;
         switch (true) {
@@ -65,7 +67,7 @@ final class Match
     /**
      * @return Player
      */
-    public function getPlayer1()
+    public function getPlayer1(): Player
     {
         return $this->player1;
     }
@@ -73,7 +75,7 @@ final class Match
     /**
      * @return Player
      */
-    public function getPlayer2()
+    public function getPlayer2(): Player
     {
         return $this->player2;
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Youhey\Glicko2;
 
 use ArrayIterator;
@@ -8,9 +10,9 @@ use ArrayObject;
 final class MatchCollection
 {
     /**
-     * @var ArrayObject
+     * @var ArrayObject|Match[]
      */
-    private $matches;
+    private ArrayObject $matches;
 
     public function __construct()
     {
@@ -20,7 +22,7 @@ final class MatchCollection
     /**
      * @param Match $match
      */
-    public function addMatch(Match $match)
+    public function addMatch(Match $match): void
     {
         $this->matches->append($match);
     }
@@ -28,7 +30,7 @@ final class MatchCollection
     /**
      * @return ArrayIterator
      */
-    public function getMatches()
+    public function getMatches(): ArrayIterator
     {
         return $this->matches->getIterator();
     }
